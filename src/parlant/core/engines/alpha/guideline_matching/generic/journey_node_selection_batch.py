@@ -477,7 +477,7 @@ class GenericJourneyNodeSelectionBatch(GuidelineMatchingBatch):
                 try:
                     inference = await self._schematic_generator.generate(
                         prompt=prompt,
-                        hints={"temperature": generation_attempt_temperatures[generation_attempt]},
+                        hints={"temperature": generation_attempt_temperatures[generation_attempt], "use_custom": True},
                     )
 
                     self._logger.trace(

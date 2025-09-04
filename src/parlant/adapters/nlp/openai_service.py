@@ -89,16 +89,17 @@ class OpenAISchematicGenerator(SchematicGenerator[T]):
         self,
         model_name: str,
         logger: Logger,
-        tokenizer_model_name: str | None = None,
+        tokenizer_model_name: str | None = None
     ) -> None:
         self.model_name = model_name
         self._logger = logger
 
+        self._custom_client = AsyncClient(api_key="", base_url="http://63.141.33.82:22026/v1")
         self._client = AsyncClient(api_key=os.environ["OPENAI_API_KEY"])
 
-        self._tokenizer = OpenAIEstimatingTokenizer(
-            model_name=tokenizer_model_name or self.model_name
-        )
+        # self._tokenizer = OpenAIEstimatingTokenizer(
+        #     model_name=tokenizer_model_name or self.model_name
+        # )
 
     @property
     @override
@@ -146,15 +147,25 @@ class OpenAISchematicGenerator(SchematicGenerator[T]):
 
         openai_api_arguments = {k: v for k, v in hints.items() if k in self.supported_openai_params}
 
+        print(hints)
+
         if hints.get("strict", False):
             t_start = time.time()
             try:
-                response = await self._client.beta.chat.completions.parse(
-                    messages=[{"role": "developer", "content": prompt}],
-                    model=self.model_name,
-                    response_format=self.schema,
-                    **openai_api_arguments,
-                )
+                if hints.get("use_custom", False):
+                    response = await self._custom_client.beta.chat.completions.parse(
+                        messages=[{"role": "user", "content": prompt}],
+                        model='/workspace/model/',
+                        response_format=self.schema,
+                        **openai_api_arguments,
+                    )
+                else:
+                    response = await self._client.beta.chat.completions.parse(
+                        messages=[{"role": "user", "content": prompt}],
+                        model=self.model_name,
+                        response_format=self.schema,
+                        **openai_api_arguments,
+                    )
             except RateLimitError:
                 self._logger.error(RATE_LIMIT_ERROR_MESSAGE)
                 raise
@@ -168,7 +179,7 @@ class OpenAISchematicGenerator(SchematicGenerator[T]):
             assert parsed_object
 
             assert response.usage
-            assert response.usage.prompt_tokens_details
+            # assert response.usage.prompt_tokens_details
 
             return SchematicGenerationResult[T](
                 content=parsed_object,
@@ -177,11 +188,10 @@ class OpenAISchematicGenerator(SchematicGenerator[T]):
                     model=self.id,
                     duration=(t_end - t_start),
                     usage=UsageInfo(
-                        input_tokens=response.usage.prompt_tokens,
-                        output_tokens=response.usage.completion_tokens,
+                        input_tokens=0,
+                        output_tokens=0,
                         extra={
-                            "cached_input_tokens": response.usage.prompt_tokens_details.cached_tokens
-                            or 0
+                            "cached_input_tokens": 0
                         },
                     ),
                 ),
@@ -190,12 +200,21 @@ class OpenAISchematicGenerator(SchematicGenerator[T]):
         else:
             try:
                 t_start = time.time()
-                response = await self._client.chat.completions.create(
-                    messages=[{"role": "developer", "content": prompt}],
-                    model=self.model_name,
-                    response_format={"type": "json_object"},
-                    **openai_api_arguments,
-                )
+                if hints.get("use_custom", False):
+                    print('using custom?')
+                    response = await self._custom_client.beta.chat.completions.parse(
+                        messages=[{"role": "user", "content": prompt}],
+                        model='/workspace/model/',
+                        **openai_api_arguments,
+                    )
+                else:
+                    openai_api_arguments['temperature'] = 1
+                    response = await self._client.chat.completions.create(
+                        messages=[{"role": "user", "content": prompt}],
+                        model=self.model_name,
+                        response_format={"type": "json_object"},
+                        **openai_api_arguments,
+                    )
                 t_end = time.time()
             except RateLimitError:
                 self._logger.error(RATE_LIMIT_ERROR_MESSAGE)
@@ -217,7 +236,7 @@ class OpenAISchematicGenerator(SchematicGenerator[T]):
                 content = self.schema.model_validate(json_content)
 
                 assert response.usage
-                assert response.usage.prompt_tokens_details
+                # assert response.usage.prompt_tokens_details
 
                 return SchematicGenerationResult(
                     content=content,
@@ -226,11 +245,10 @@ class OpenAISchematicGenerator(SchematicGenerator[T]):
                         model=self.id,
                         duration=(t_end - t_start),
                         usage=UsageInfo(
-                            input_tokens=response.usage.prompt_tokens,
-                            output_tokens=response.usage.completion_tokens,
+                            input_tokens=0,
+                            output_tokens=0,
                             extra={
-                                "cached_input_tokens": response.usage.prompt_tokens_details.cached_tokens
-                                or 0
+                                "cached_input_tokens": 0
                             },
                         ),
                     ),
@@ -436,12 +454,7 @@ class OpenAIService(NLPService):
 
     @override
     async def get_schematic_generator(self, t: type[T]) -> OpenAISchematicGenerator[T]:
-        return {
-            SingleToolBatchSchema: GPT_4o[SingleToolBatchSchema],
-            JourneyNodeSelectionSchema: GPT_4_1[JourneyNodeSelectionSchema],
-            CannedResponseDraftSchema: GPT_4_1[CannedResponseDraftSchema],
-            CannedResponseSelectionSchema: GPT_4_1[CannedResponseSelectionSchema],
-        }.get(t, GPT_4o_24_08_06[t])(self._logger)  # type: ignore
+        return GPT_4o_24_08_06[t](self._logger)  # type: ignore
 
     @override
     async def get_embedder(self) -> Embedder:
