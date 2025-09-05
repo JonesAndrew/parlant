@@ -94,7 +94,7 @@ class OpenAISchematicGenerator(SchematicGenerator[T]):
         self.model_name = model_name
         self._logger = logger
 
-        self._custom_client = AsyncClient(api_key="", base_url="http://localhost:6000", default_headers={"host": "http://63.141.33.82:22026/v1"})
+        self._custom_client = AsyncClient(api_key=os.environ["ART_API_KEY"], base_url="http://localhost:6000", default_headers={"host": os.environ["ART_HOST"]})
         self._client = AsyncClient(api_key=os.environ["OPENAI_API_KEY"])
 
         # self._tokenizer = OpenAIEstimatingTokenizer(
@@ -201,11 +201,14 @@ class OpenAISchematicGenerator(SchematicGenerator[T]):
         else:
             try:
                 t_start = time.time()
-                if hints.get("use_custom", False):
-                    print('using custom?')
+                if os.getenv("ALWAYS_USE_CUSTOM_MODEL") or hints.get("use_custom", False):
+                    print(hints.get("session", "none"))
                     response = await self._custom_client.beta.chat.completions.parse(
                         messages=[{"role": "user", "content": prompt}],
                         model='/workspace/model/',
+                        extra_headers={
+                            "x-parlant-session": hints.get("session", "none")
+                        },
                         **openai_api_arguments,
                     )
                 else:
