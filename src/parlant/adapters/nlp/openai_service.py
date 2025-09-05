@@ -205,7 +205,7 @@ class OpenAISchematicGenerator(SchematicGenerator[T]):
                     print(hints.get("session", "none"))
                     response = await self._custom_client.beta.chat.completions.parse(
                         messages=[{"role": "user", "content": prompt}],
-                        model='/workspace/model/',
+                        model=os.environ['ART_MODEL'],
                         extra_headers={
                             "x-parlant-session": hints.get("session", "none")
                         },
