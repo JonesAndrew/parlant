@@ -101,7 +101,7 @@ class GenericPreviouslyAppliedActionableGuidelineMatchingBatch(GuidelineMatching
                 for generation_attempt in range(3):
                     inference = await self._schematic_generator.generate(
                         prompt=prompt,
-                        hints={"temperature": generation_attempt_temperatures[generation_attempt], "use_custom": True},
+                        hints={"temperature": generation_attempt_temperatures[generation_attempt], "use_custom": True, "session": self._context.session.id},
                     )
 
                 if not inference.content.checks:

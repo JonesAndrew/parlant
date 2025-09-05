@@ -148,7 +148,7 @@ class GenericDisambiguationGuidelineMatchingBatch(GuidelineMatchingBatch):
                 try:
                     inference = await self._schematic_generator.generate(
                         prompt=prompt,
-                        hints={"temperature": generation_attempt_temperatures[generation_attempt], "use_custom": True},
+                        hints={"temperature": generation_attempt_temperatures[generation_attempt], "use_custom": True, "session": self._context.session.id},
                     )
                     self._logger.trace(
                         f"Completion:\n{inference.content.model_dump_json(indent=2)}"

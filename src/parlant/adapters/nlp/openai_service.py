@@ -94,7 +94,7 @@ class OpenAISchematicGenerator(SchematicGenerator[T]):
         self.model_name = model_name
         self._logger = logger
 
-        self._custom_client = AsyncClient(api_key="", base_url="http://63.141.33.82:22026/v1")
+        self._custom_client = AsyncClient(api_key="", base_url="http://localhost:6000", default_headers={"host": "http://63.141.33.82:22026/v1"})
         self._client = AsyncClient(api_key=os.environ["OPENAI_API_KEY"])
 
         # self._tokenizer = OpenAIEstimatingTokenizer(
@@ -158,6 +158,7 @@ class OpenAISchematicGenerator(SchematicGenerator[T]):
                         model='/workspace/model/',
                         response_format=self.schema,
                         **openai_api_arguments,
+                        
                     )
                 else:
                     response = await self._client.beta.chat.completions.parse(
