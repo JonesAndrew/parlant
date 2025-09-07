@@ -278,7 +278,7 @@ class GPT_4o(OpenAISchematicGenerator[T]):
 
 class GPT_4o_24_08_06(OpenAISchematicGenerator[T]):
     def __init__(self, logger: Logger) -> None:
-        super().__init__(model_name="gpt-5", logger=logger)
+        super().__init__(model_name="gpt-5-mini", logger=logger)
 
     @property
     @override
