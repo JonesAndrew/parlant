@@ -212,7 +212,8 @@ class OpenAISchematicGenerator(SchematicGenerator[T]):
                         **openai_api_arguments,
                     )
                 else:
-                    del openai_api_arguments['temperature']
+                    if 'temperature' in openai_api_arguments:
+                        del openai_api_arguments['temperature']
                     response = await self._client.chat.completions.create(
                         messages=[{"role": "user", "content": prompt}],
                         model=self.model_name,
