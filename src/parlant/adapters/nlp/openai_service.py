@@ -212,7 +212,7 @@ class OpenAISchematicGenerator(SchematicGenerator[T]):
                         **openai_api_arguments,
                     )
                 else:
-                    openai_api_arguments['temperature'] = 1
+                    del openai_api_arguments['temperature']
                     response = await self._client.chat.completions.create(
                         messages=[{"role": "user", "content": prompt}],
                         model=self.model_name,
@@ -277,7 +277,7 @@ class GPT_4o(OpenAISchematicGenerator[T]):
 
 class GPT_4o_24_08_06(OpenAISchematicGenerator[T]):
     def __init__(self, logger: Logger) -> None:
-        super().__init__(model_name="gpt-4o-2024-08-06", logger=logger)
+        super().__init__(model_name="gpt-5", logger=logger)
 
     @property
     @override
