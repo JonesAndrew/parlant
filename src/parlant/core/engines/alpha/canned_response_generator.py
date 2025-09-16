@@ -630,7 +630,7 @@ You will now be given the current state of the interaction to which you must gen
         )
 
         canrep = await self._canrep_fluid_preamble_generator.generate(
-            prompt=prompt_builder, hints={"temperature": 0.1}
+            prompt=prompt_builder, hints={"temperature": 0.1, "session": context.session.id}
         )
 
         self._logger.trace(
@@ -1429,7 +1429,7 @@ Output a JSON object with three properties:
 
         draft_response = await self._canrep_draft_generator.generate(
             prompt=draft_prompt,
-            hints={"temperature": temperature},
+            hints={"temperature": temperature, "session": loaded_context.session.id},
         )
 
         self._logger.trace(
@@ -1503,6 +1503,7 @@ Output a JSON object with three properties:
             ):
                 recomposition_generation_info, composited_message = await self._recompose(
                     context=context,
+                    loaded_context=loaded_context,
                     draft_message=draft_response.content.response_body,
                     reference_messages=[canrep[1] for canrep in rendered_canreps],
                 )
@@ -1526,7 +1527,7 @@ Output a JSON object with three properties:
                     draft_message=draft_response.content.response_body,
                     canned_responses=rendered_canreps,
                 ),
-                hints={"temperature": 0.1},
+                hints={"temperature": 0.1, "session": loaded_context.session.id},
             )
 
         self._logger.trace(
@@ -1677,6 +1678,7 @@ Output a JSON object with three properties:
     async def _recompose(
         self,
         context: CannedResponseContext,
+        loaded_context: LoadedContext,
         draft_message: str,
         reference_messages: list[str],
     ) -> tuple[GenerationInfo, str]:
@@ -1730,7 +1732,7 @@ Respond with a JSON object {{ "revised_canned_response": "<message_with_points_s
 
         result = await self._canrep_composition_generator.generate(
             builder,
-            hints={"temperature": 1},
+            hints={"temperature": 1, "session": loaded_context.session.id},
         )
 
         self._logger.trace(f"Composition Completion:\n{result.content.model_dump_json(indent=2)}")

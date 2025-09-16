@@ -145,6 +145,7 @@ class SingleToolBatch(ToolCallBatch):
             candidate_descriptor=self._candidate_tool,
             reference_tools=[],
             staged_events=self._context.staged_events,
+            session_id=self._context.session_id
         )
 
         return ToolCallBatchResult(
@@ -182,6 +183,7 @@ class SingleToolBatch(ToolCallBatch):
         candidate_descriptor: tuple[ToolId, Tool, Sequence[GuidelineMatch]],
         reference_tools: Sequence[tuple[ToolId, Tool]],
         staged_events: Sequence[EmittedEvent],
+        session_id: str
     ) -> tuple[
         GenerationInfo,
         list[ToolCall],
@@ -217,6 +219,7 @@ class SingleToolBatch(ToolCallBatch):
                     generation_info, inference_output = await self._run_inference(
                         prompt=inference_prompt,
                         temperature=generation_attempt_temperatures[generation_attempt],
+                        session_id=session_id
                     )
 
                     # Evaluate the tool calls
@@ -796,10 +799,11 @@ Guidelines:
         self,
         prompt: PromptBuilder,
         temperature: float,
+        session_id: str,
     ) -> tuple[GenerationInfo, Sequence[SingleToolBatchToolCallEvaluation]]:
         inference = await self._schematic_generator.generate(
             prompt=prompt,
-            hints={"temperature": temperature},
+            hints={"temperature": temperature, "session": session_id},
         )
         self._logger.trace(f"Inference::Completion:\n{inference.content.model_dump_json(indent=2)}")
 

@@ -52,6 +52,7 @@ from parlant.core.common import CancellationSuppressionLatch, DefaultBaseModel
 from parlant.core.loggers import Logger
 from parlant.core.shots import Shot, ShotCollection
 from parlant.core.tools import ToolId
+from parlant.core.sessions import Session
 
 
 class ContextEvaluation(DefaultBaseModel):
@@ -168,6 +169,7 @@ class MessageGenerator(MessageEventComposer):
                         staged_tool_events=context.state.tool_events,
                         staged_message_events=context.state.message_events,
                         latch=latch,
+                        session=context.session,
                     )
 
     def _format_staged_events(
@@ -200,6 +202,7 @@ class MessageGenerator(MessageEventComposer):
         staged_tool_events: Sequence[EmittedEvent],
         staged_message_events: Sequence[EmittedEvent],
         latch: Optional[CancellationSuppressionLatch] = None,
+        session: Session = None
     ) -> Sequence[MessageEventComposition]:
         if (
             not interaction_history
@@ -245,6 +248,7 @@ class MessageGenerator(MessageEventComposer):
                 generation_info, response_message = await self._generate_response_message(
                     prompt,
                     temperature=generation_attempt_temperatures[generation_attempt],
+                    session=session,
                     final_attempt=(generation_attempt + 1) == len(generation_attempt_temperatures),
                 )
 
@@ -698,11 +702,12 @@ Produce a valid JSON object in the following format: ###
         self,
         prompt: PromptBuilder,
         temperature: float,
+        session: Session,
         final_attempt: bool,
     ) -> tuple[GenerationInfo, Optional[str]]:
         message_event_response = await self._schematic_generator.generate(
             prompt=prompt,
-            hints={"temperature": temperature},
+            hints={"temperature": temperature, "session": session.id},
         )
 
         self._logger.trace(
